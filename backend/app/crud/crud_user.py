@@ -11,6 +11,12 @@ def get_user_by_email(db: Session, *, email: str) -> Optional[User]:
     """
     return db.query(User).filter(User.email == email).first()
 
+def get(db: Session, id: int) -> Optional[User]:
+    """
+    Get a single user by their ID.
+    """
+    return db.query(User).filter(User.id == id).first()
+
 def create_user(db: Session, *, obj_in: UserCreate) -> User:
     """
     Creates a new user in the database.

@@ -30,7 +30,12 @@ def create_user(
     return user
 
 
-@router.post("/login/access-token", response_model=Token, tags=["Users"])
+@router.post(
+    "/login/access-token", 
+    response_model=Token, 
+    tags=["Users"],
+    description="获取访问令牌以进行后续请求。**注意**: 'username' 字段需要填写您注册时使用的 **电子邮件地址**。"
+)
 def login_for_access_token(
     db: Session = Depends(deps.get_db), 
     form_data: OAuth2PasswordRequestForm = Depends()

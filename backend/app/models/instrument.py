@@ -1,11 +1,14 @@
 import enum
 from sqlalchemy import Column, Integer, String, Boolean, Enum
+from sqlalchemy.orm import relationship, Mapped, mapped_column
+from typing import List, TYPE_CHECKING
+
 from app.db.base import Base
 
+if TYPE_CHECKING:
+    from .reservation import Reservation
+
 class InstrumentStatus(str, enum.Enum):
-    """
-    Enum for the status of an instrument.
-    """
     AVAILABLE = "available"
     IN_USE = "in_use"
     MAINTENANCE = "maintenance"
@@ -13,30 +16,20 @@ class InstrumentStatus(str, enum.Enum):
 class Instrument(Base):
     __tablename__ = "instruments"
 
-    # Core Information
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True, nullable=False, comment="The common name of the instrument")
-    model = Column(String, index=True, comment="The specific model of the instrument")
-    location = Column(String, nullable=False, comment="The physical location of the instrument, e.g., Room A101")
-    description = Column(String, comment="A detailed description of the instrument's capabilities")
+    # Use Mapped and mapped_column for modern, type-annotated models
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String, index=True, nullable=False, comment="The common name")
+    model: Mapped[str | None] = mapped_column(String, index=True, nullable=True, comment="The specific model")
+    location: Mapped[str] = mapped_column(String, nullable=False, comment="The physical location")
+    description: Mapped[str | None] = mapped_column(String, nullable=True, comment="Detailed capabilities")
     
-    # Status and Control
-    is_active = Column(Boolean, default=True, nullable=False, comment="Whether the instrument is available for booking in the system")
-    status = Column(Enum(InstrumentStatus), nullable=False, default=InstrumentStatus.AVAILABLE, comment="The current real-time status of the instrument")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, comment="Is available for booking")
+    status: Mapped[InstrumentStatus] = mapped_column(Enum(InstrumentStatus), nullable=False, default=InstrumentStatus.AVAILABLE)
     
-    # Network Identification (for client-side security)
-    ip_address = Column(String, unique=True, nullable=True, comment="The static IP address of the connected computer")
-    mac_address = Column(String, unique=True, nullable=True, comment="The MAC address of the connected computer for identification")
+    ip_address: Mapped[str | None] = mapped_column(String, unique=True, nullable=True, comment="Static IP address")
+    mac_address: Mapped[str | None] = mapped_column(String, unique=True, nullable=True, comment="MAC address")
 
     # --- Relationships ---
-    from sqlalchemy.orm import relationship, Mapped
-    from typing import List, TYPE_CHECKING
-
-    # This import is only for type hinting and is guarded by TYPE_CHECKING
-    if TYPE_CHECKING:
-        from .reservation import Reservation  # Use a relative import
-
-    # This instrument's list of reservations
     reservations: Mapped[List["Reservation"]] = relationship(
         "Reservation", 
         back_populates="instrument", 

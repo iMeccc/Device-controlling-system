@@ -38,3 +38,48 @@ def create_access_token(
     to_encode = {"exp": expire, "sub": str(subject)}
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
+
+from jose import jwt, JWTError
+from fastapi import HTTPException, status
+from typing import Any
+
+# --- JWT Token Decoding ---
+def decode_access_token(token: str) -> str:
+    """
+    Decodes a JWT access token and returns its subject (user ID).
+    Raises HTTPException if the token is invalid or expired.
+    """
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
+        
+        # Get the subject from the payload. It can be of any type or None.
+        sub: Any = payload.get("sub")
+        
+        # First, check if the subject exists at all.
+        if sub is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Could not validate credentials - token subject missing",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        # If it exists, we can now safely return it as a string.
+        # Pydantic and SQLAlchemy can handle the string representation of the user ID.
+        return str(sub)
+
+    except JWTError:
+        # This catches errors like invalid signature, token has expired, etc.
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials - invalid token or expired",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except Exception as e:
+        # Catch any other unexpected errors during decoding
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Could not validate credentials - token decoding failed: {e}",
+            headers={"WWW-Authenticate": "Bearer"},
+        )

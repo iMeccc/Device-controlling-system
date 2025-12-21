@@ -1,6 +1,12 @@
-from sqlalchemy import Boolean, Column, Integer, String, Enum
-from app.db.base import Base
 import enum
+from sqlalchemy import Boolean, Column, Integer, String, Enum
+from sqlalchemy.orm import relationship, Mapped, mapped_column
+from typing import List, TYPE_CHECKING
+
+from app.db.base import Base
+
+if TYPE_CHECKING:
+    from .reservation import Reservation
 
 class UserRole(str, enum.Enum):
     ADMIN = "admin"
@@ -10,23 +16,15 @@ class UserRole(str, enum.Enum):
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
-    full_name = Column(String, index=True)
-    role = Column(Enum(UserRole), default=UserRole.STUDENT)
-    is_active = Column(Boolean, default=True)
+    # Use Mapped and mapped_column for modern, type-annotated models
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    email: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
+    hashed_password: Mapped[str] = mapped_column(String, nullable=False)
+    full_name: Mapped[str | None] = mapped_column(String, index=True, nullable=True)
+    role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.STUDENT)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     # --- Relationships ---
-    from sqlalchemy.orm import relationship, Mapped
-    from typing import List, TYPE_CHECKING
-
-    # This import is only for type hinting and is guarded by TYPE_CHECKING
-    # to prevent circular import errors at runtime.
-    if TYPE_CHECKING:
-        from .reservation import Reservation  # Use a relative import
-
-    # This user's list of reservations
     reservations: Mapped[List["Reservation"]] = relationship(
         "Reservation", 
         back_populates="user", 
