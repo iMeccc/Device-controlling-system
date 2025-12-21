@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter  # <-- 1. Import APIRouter here
+from fastapi import FastAPI, APIRouter
 
 from app.core.config import settings
 from app.db.base import Base
@@ -10,7 +10,7 @@ from app.models import user, instrument, reservation, log
 # --- Import API Routers ---
 from app.api.v1.endpoints import users as users_router
 from app.api.v1.endpoints import instruments as instruments_router
-
+from app.api.v1.endpoints import reservations as reservations_router # <-- 1. Import the new reservations router
 
 def create_tables():
     """
@@ -30,11 +30,11 @@ def create_app() -> FastAPI:
 
     # --- Include API Routers ---
     # Create a single APIRouter to group all v1 endpoints
-    api_router = APIRouter()  # <-- 2. Change FastAPI() to APIRouter()
+    api_router = APIRouter()
     
     api_router.include_router(users_router.router, prefix="/users", tags=["Users"])
     api_router.include_router(instruments_router.router, prefix="/instruments", tags=["Instruments"])
-
+    api_router.include_router(reservations_router.router, prefix="/reservations", tags=["Reservations"]) # <-- 2. Include the new reservations router
     # Mount the main v1 router to the app
     app.include_router(api_router, prefix=settings.API_V1_STR)
     
