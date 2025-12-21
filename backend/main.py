@@ -1,22 +1,20 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, APIRouter  # <-- 1. Import APIRouter here
 
 from app.core.config import settings
 from app.db.base import Base
 from app.db.session import engine
 
 # Import all models to ensure they are registered with SQLAlchemy's metadata
-# before table creation. This is a crucial step.
 from app.models import user, instrument, reservation, log
 
-# Import the API router for users
+# --- Import API Routers ---
 from app.api.v1.endpoints import users as users_router
+from app.api.v1.endpoints import instruments as instruments_router
 
 
 def create_tables():
     """
     Creates all database tables defined in the models.
-    NOTE: In a production environment, this is typically handled by a
-    database migration tool like Alembic.
     """
     Base.metadata.create_all(bind=engine)
 
@@ -30,8 +28,15 @@ def create_app() -> FastAPI:
         openapi_url=f"{settings.API_V1_STR}/openapi.json"
     )
 
-    # Include the user API router
-    app.include_router(users_router.router, prefix=settings.API_V1_STR)
+    # --- Include API Routers ---
+    # Create a single APIRouter to group all v1 endpoints
+    api_router = APIRouter()  # <-- 2. Change FastAPI() to APIRouter()
+    
+    api_router.include_router(users_router.router, prefix="/users", tags=["Users"])
+    api_router.include_router(instruments_router.router, prefix="/instruments", tags=["Instruments"])
+
+    # Mount the main v1 router to the app
+    app.include_router(api_router, prefix=settings.API_V1_STR)
     
     return app
 
