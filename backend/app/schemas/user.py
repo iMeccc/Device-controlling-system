@@ -36,4 +36,4 @@ class User(UserBase):
     class Config:
         # This tells Pydantic to read the data even if it is not a dict,
         # but an ORM model (or any other arbitrary object with attributes).
-        orm_mode = True
+        from_attributes = True
