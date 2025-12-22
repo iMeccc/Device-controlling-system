@@ -16,7 +16,7 @@ router = APIRouter()
     "/",
     response_model=User, 
     tags=["Users"],
-    dependencies=[Depends(deps.get_current_active_admin)]
+    dependencies=[Depends(deps.get_current_active_admin)] # If there is no admin, comment out this line to create the first admin
 )
 def create_user(
     user_in: UserCreate,

@@ -1,12 +1,14 @@
 import enum
-from sqlalchemy import Column, Integer, String, Boolean, Enum
+from sqlalchemy import Integer, String, Boolean, Enum
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from typing import List, TYPE_CHECKING
 
 from app.db.base import Base
+from .permission import user_instrument_permission
 
 if TYPE_CHECKING:
     from .reservation import Reservation
+    from .user import User
 
 class InstrumentStatus(str, enum.Enum):
     AVAILABLE = "available"
@@ -16,7 +18,6 @@ class InstrumentStatus(str, enum.Enum):
 class Instrument(Base):
     __tablename__ = "instruments"
 
-    # Use Mapped and mapped_column for modern, type-annotated models
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String, index=True, nullable=False, comment="The common name")
     model: Mapped[str | None] = mapped_column(String, index=True, nullable=True, comment="The specific model")
@@ -34,4 +35,10 @@ class Instrument(Base):
         "Reservation", 
         back_populates="instrument", 
         cascade="all, delete-orphan"
+    )
+
+    authorized_users: Mapped[List["User"]] = relationship(
+        "User",
+        secondary=user_instrument_permission,
+        back_populates="authorized_instruments",
     )

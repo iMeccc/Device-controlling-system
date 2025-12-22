@@ -7,21 +7,32 @@ from app.crud import crud_reservation
 from app.schemas.reservation import Reservation, ReservationCreate, ReservationUpdate
 from app.api import deps
 from app.models.reservation import ReservationStatus
+from app.crud import crud_reservation, crud_instrument
 
 router = APIRouter()
 
-
 @router.post("/", response_model=Reservation, status_code=201)
 def create_reservation(
-    # The request body (without a default value) is placed first.
     reservation_in: ReservationCreate,
-    # All dependency injections (which have default values) follow.
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
     """
     Create a new reservation for the current logged-in user.
     """
+    # --- 1. NEW: Authorization Check ---
+    # First, check if the instrument exists
+    instrument = crud_instrument.get(db, id=reservation_in.instrument_id)
+    if not instrument:
+        raise HTTPException(status_code=404, detail="Instrument not found")
+        
+    # Then, check if the current user is in the instrument's list of authorized users
+    if current_user not in instrument.authorized_users and current_user.role != UserRole.ADMIN:
+        # Allow admins to bypass this check
+        raise HTTPException(status_code=403, detail="User not authorized for this instrument")
+
+    # --- 2. Existing Logic ---
+    # Check if the requested timeslot is available
     is_available = crud_reservation.is_timeslot_available(
         db,
         instrument_id=reservation_in.instrument_id,
