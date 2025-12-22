@@ -81,3 +81,23 @@ export const createReservation = async (reservationData) => {
     throw error;
   }
 };
+
+export const getMyReservations = async () => {
+  // Thanks to the interceptor, the token is added automatically
+  try {
+    const response = await apiClient.get('/reservations/my-reservations');
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const cancelReservation = async (reservationId) => {
+  // Thanks to the interceptor, the token is added automatically
+  try {
+    const response = await apiClient.delete(`/reservations/${reservationId}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};

@@ -31,16 +31,18 @@ def get_multi_by_instrument(
     db: Session, *, instrument_id: int, skip: int = 0, limit: int = 100
 ) -> List[Reservation]:
     """
-    Get all FUTURE reservations for a specific instrument.
+    Get all ACTIVE (confirmed or pending) future reservations for a specific instrument.
     """
     today = date.today()
     return (
         db.query(Reservation)
         .filter(
             Reservation.instrument_id == instrument_id,
-            Reservation.start_time >= today
+            Reservation.start_time >= today,
+            # --- THIS IS THE CRUCIAL FIX ---
+            Reservation.status.in_(["confirmed", "pending"])
         )
-        .order_by(Reservation.start_time) # Good practice to sort them
+        .order_by(Reservation.start_time)
         .offset(skip)
         .limit(limit)
         .all()

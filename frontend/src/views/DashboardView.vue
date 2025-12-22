@@ -2,7 +2,10 @@
   <div class="dashboard-container">
     <header class="dashboard-header">
       <h1>仪器预约主控台</h1>
-      <el-button type="danger" @click="handleLogout">登出</el-button>
+      <div>
+        <el-button @click="goToMyReservations">我的预约</el-button>
+        <el-button type="danger" @click="handleLogout">登出</el-button>
+      </div>
     </header>
     
     <main class="dashboard-content">
@@ -61,6 +64,10 @@ const handleLogout = () => {
 const handleView = (instrument) => {
   // Use the router to navigate to the instrument's detail page
   router.push(`/instrument/${instrument.id}`);
+};
+
+const goToMyReservations = () => {
+  router.push('/my-reservations');
 };
 </script>
 
