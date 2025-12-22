@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
 from typing import List, Optional
 from datetime import datetime
+from datetime import date 
 
 from app.models.reservation import Reservation
 from app.schemas.reservation import ReservationCreate, ReservationUpdate
@@ -30,11 +31,16 @@ def get_multi_by_instrument(
     db: Session, *, instrument_id: int, skip: int = 0, limit: int = 100
 ) -> List[Reservation]:
     """
-    Get all reservations for a specific instrument.
+    Get all FUTURE reservations for a specific instrument.
     """
+    today = date.today()
     return (
         db.query(Reservation)
-        .filter(Reservation.instrument_id == instrument_id)
+        .filter(
+            Reservation.instrument_id == instrument_id,
+            Reservation.start_time >= today
+        )
+        .order_by(Reservation.start_time) # Good practice to sort them
         .offset(skip)
         .limit(limit)
         .all()
@@ -68,13 +74,16 @@ def is_timeslot_available(
 def create_with_owner(
     db: Session, *, obj_in: ReservationCreate, user_id: int
 ) -> Reservation:
-    """
-    Create a new reservation for a specific user.
-    """
     db_obj = Reservation(**obj_in.dict(), user_id=user_id)
     db.add(db_obj)
     db.commit()
     db.refresh(db_obj)
+    
+    # --- TODO: Email Notification Interface ---
+    # This is the perfect place to trigger an email notification.
+    # We have the user object (via db_obj.user) and reservation details.
+    # Example: send_reservation_confirmation_email(user=db_obj.user, reservation=db_obj)
+    
     return db_obj
 
 def update(
