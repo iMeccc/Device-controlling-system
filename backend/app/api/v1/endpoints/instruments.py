@@ -5,19 +5,18 @@ from typing import List
 from app.crud import crud_instrument
 from app.schemas.instrument import Instrument, InstrumentCreate, InstrumentUpdate
 from app.api import deps
+from app.models.user import User
 
 router = APIRouter()
 
 @router.post("/", response_model=Instrument, status_code=201)
 def create_instrument(
-    *,
-    db: Session = Depends(deps.get_db),
     instrument_in: InstrumentCreate,
-    # TODO: Add dependency for admin user authentication
+    db: Session = Depends(deps.get_db),
+    current_admin: User = Depends(deps.get_current_active_admin),
 ):
     """
-    Create a new instrument in the system.
-    (Requires administrator privileges in the future).
+    Create a new instrument in the system (Admins only).
     """
     instrument = crud_instrument.create(db=db, obj_in=instrument_in)
     return instrument
@@ -36,9 +35,8 @@ def read_instruments(
 
 @router.get("/{instrument_id}", response_model=Instrument)
 def read_instrument(
-    *,
-    db: Session = Depends(deps.get_db),
     instrument_id: int,
+    db: Session = Depends(deps.get_db),
 ):
     """
     Get a specific instrument by its ID.
@@ -50,15 +48,13 @@ def read_instrument(
 
 @router.put("/{instrument_id}", response_model=Instrument)
 def update_instrument(
-    *,
-    db: Session = Depends(deps.get_db),
     instrument_id: int,
     instrument_in: InstrumentUpdate,
-    # TODO: Add dependency for admin user authentication
+    db: Session = Depends(deps.get_db),
+    current_admin: User = Depends(deps.get_current_active_admin),
 ):
     """
-    Update an existing instrument.
-    (Requires administrator privileges in the future).
+    Update an existing instrument (Admins only).
     """
     instrument = crud_instrument.get(db=db, id=instrument_id)
     if not instrument:
@@ -69,14 +65,12 @@ def update_instrument(
 
 @router.delete("/{instrument_id}", response_model=Instrument)
 def delete_instrument(
-    *,
-    db: Session = Depends(deps.get_db),
     instrument_id: int,
-    # TODO: Add dependency for admin user authentication
+    db: Session = Depends(deps.get_db),
+    current_admin: User = Depends(deps.get_current_active_admin),
 ):
     """
-    Delete an instrument from the system.
-    (Requires administrator privileges in the future).
+    Delete an instrument from the system (Admins only).
     """
     instrument = crud_instrument.get(db=db, id=instrument_id)
     if not instrument:

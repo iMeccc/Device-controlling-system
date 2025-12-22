@@ -51,3 +51,17 @@ def get_current_user(
         
     return user
 
+def get_current_active_admin(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """
+    Dependency to get the current user and check if they are an admin.
+    - Reuses the 'get_current_user' dependency.
+    - Checks the 'role' attribute of the user.
+    - Raises HTTPException 403 if the user is not an admin.
+    """
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=403, detail="The user doesn't have enough privileges"
+        )
+    return current_user

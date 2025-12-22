@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
+from typing import List
 
 # Import the UserRole enum from your models to ensure consistency
 from app.models.user import UserRole
@@ -37,3 +38,7 @@ class User(UserBase):
         # This tells Pydantic to read the data even if it is not a dict,
         # but an ORM model (or any other arbitrary object with attributes).
         from_attributes = True
+        
+# --- Schema for Bulk Creation ---
+class UserBulkCreate(BaseModel):
+    users: List[UserCreate]

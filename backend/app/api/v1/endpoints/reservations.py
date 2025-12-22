@@ -1,15 +1,9 @@
-# File: backend/app/api/v1/endpoints/reservations.py (Final, Corrected Version)
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Any
 
-# --- Corrected Imports ---
-# Import the specific model 'User' and the CRUD module directly
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.crud import crud_reservation
-# -------------------------
-
 from app.schemas.reservation import Reservation, ReservationCreate, ReservationUpdate
 from app.api import deps
 from app.models.reservation import ReservationStatus
@@ -19,10 +13,11 @@ router = APIRouter()
 
 @router.post("/", response_model=Reservation, status_code=201)
 def create_reservation(
-    *,
-    db: Session = Depends(deps.get_db),
+    # The request body (without a default value) is placed first.
     reservation_in: ReservationCreate,
-    current_user: User = Depends(deps.get_current_user), # <-- Use 'User' directly
+    # All dependency injections (which have default values) follow.
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
 ) -> Any:
     """
     Create a new reservation for the current logged-in user.
@@ -53,7 +48,7 @@ def read_reservations_for_instrument(
     limit: int = 100,
 ):
     """
-    Retrieve all reservations for a specific instrument. (Public endpoint)
+    Retrieve all active reservations for a specific instrument. (Public endpoint)
     """
     reservations = crud_reservation.get_multi_by_instrument(
         db, instrument_id=instrument_id, skip=skip, limit=limit
@@ -64,7 +59,7 @@ def read_reservations_for_instrument(
 @router.get("/my-reservations", response_model=List[Reservation])
 def read_my_reservations(
     db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_user), # <-- Use 'User' directly
+    current_user: User = Depends(deps.get_current_user),
 ):
     """
     Retrieve all reservations for the current logged-in user.
@@ -77,21 +72,31 @@ def read_my_reservations(
 
 @router.delete("/{reservation_id}", response_model=Reservation)
 def cancel_reservation(
-    *,
+    # Path parameters (without defaults) come first.
     reservation_id: int,
+    # Dependency injections (with defaults) follow.
     db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_user), # <-- Use 'User' directly
+    current_user: User = Depends(deps.get_current_user),
 ):
     """
-    Cancel a reservation. A user can only cancel their own reservations.
+    Cancel a reservation.
+    - A regular user can only cancel their own reservations.
+    - An admin can cancel any user's reservation.
     """
     reservation = crud_reservation.get(db=db, id=reservation_id)
     if not reservation:
         raise HTTPException(status_code=404, detail="Reservation not found")
     
-    if reservation.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not enough permissions")
+    if reservation.user_id != current_user.id and current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=403, detail="Not enough permissions to cancel this reservation"
+        )
     
+    if reservation.status not in [ReservationStatus.CONFIRMED, ReservationStatus.PENDING]:
+         raise HTTPException(
+            status_code=400, detail=f"Cannot cancel a reservation with status '{reservation.status.value}'"
+        )
+
     update_schema = ReservationUpdate(status=ReservationStatus.CANCELLED)
     cancelled_reservation = crud_reservation.update(
         db=db, db_obj=reservation, obj_in=update_schema
