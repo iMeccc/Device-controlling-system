@@ -9,6 +9,7 @@ from .permission import user_instrument_permission
 if TYPE_CHECKING:
     from .reservation import Reservation
     from .instrument import Instrument
+    from .log import AccessLog 
 
 class UserRole(str, enum.Enum):
     ADMIN = "admin"
@@ -37,3 +38,5 @@ class User(Base):
         secondary=user_instrument_permission,
         back_populates="authorized_users",
     )
+
+    logs: Mapped[List["AccessLog"]] = relationship("AccessLog", back_populates="user")

@@ -9,6 +9,7 @@ from app.schemas.user import User, UserCreate, UserBulkCreate
 from app.schemas.token import Token
 from app.api import deps
 from app.core.security import create_access_token
+from app.crud import crud_user, crud_log
 
 router = APIRouter()
 
@@ -57,6 +58,15 @@ def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token = create_access_token(subject=user.id)
+
+    # Log the successful login event.
+    crud_log.create_log_entry(
+        db=db,
+        user_id=user.id,
+        action="USER_LOGIN",
+        details={"message": f"User {user.email} logged in successfully."}
+    )
+
     return {
         "access_token": access_token,
         "token_type": "bearer",

@@ -8,6 +8,7 @@ from app.schemas.reservation import Reservation, ReservationCreate, ReservationU
 from app.api import deps
 from app.models.reservation import ReservationStatus
 from app.crud import crud_reservation, crud_instrument
+from app.crud import crud_reservation, crud_instrument, crud_log
 
 router = APIRouter()
 
@@ -48,6 +49,20 @@ def create_reservation(
     reservation = crud_reservation.create_with_owner(
         db=db, obj_in=reservation_in, user_id=current_user.id
     )
+
+    # log the reservation creation event
+    crud_log.create_log_entry(
+        db=db,
+        user_id=current_user.id,
+        action="RESERVATION_CREATED",
+        details={
+            "reservation_id": reservation.id,
+            "instrument_id": reservation.instrument_id,
+            "start_time": reservation.start_time.isoformat(),
+            "end_time": reservation.end_time.isoformat(),
+        }
+    )
+
     return reservation
 
 
@@ -112,4 +127,16 @@ def cancel_reservation(
     cancelled_reservation = crud_reservation.update(
         db=db, db_obj=reservation, obj_in=update_schema
     )
+
+    # log the reservation cancellation event
+    crud_log.create_log_entry(
+        db=db,
+        user_id=current_user.id,
+        action="RESERVATION_CANCELLED",
+        details={
+            "reservation_id": cancelled_reservation.id,
+            "instrument_id": cancelled_reservation.instrument_id,
+        }
+    )
+
     return cancelled_reservation
