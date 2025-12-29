@@ -38,6 +38,7 @@
 import { ref, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import router from '@/router';
+import { authMethods } from '@/store/auth';
 import { getInstruments } from '@/services/api';
 
 const instruments = ref([]);
@@ -57,7 +58,7 @@ onMounted(async () => {
 });
 
 const handleLogout = () => {
-  localStorage.removeItem('access_token');
+  authMethods.logout(); 
   router.push('/login');
 };
 

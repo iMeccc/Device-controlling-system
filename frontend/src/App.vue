@@ -1,3 +1,8 @@
+<script setup>
+import { RouterView } from 'vue-router';
+// The onMounted logic is no longer needed here, as the router guard now handles it.
+</script>
+
 <template>
   <!-- RouterView is the placeholder where our pages like Login, Dashboard etc. will be rendered -->
   <RouterView />

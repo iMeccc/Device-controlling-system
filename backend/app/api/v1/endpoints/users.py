@@ -5,13 +5,30 @@ from typing import Any, List
 from pydantic import EmailStr # <-- Added import
 
 from app.crud import crud_user
-from app.schemas.user import User, UserCreate, UserBulkCreate
+from app.schemas.user import User, UserCreate, UserBulkCreate, UserUpdate
 from app.schemas.token import Token
 from app.api import deps
 from app.core.security import create_access_token
 from app.crud import crud_user, crud_log
 
 router = APIRouter()
+
+@router.get(
+    "/",
+    response_model=List[User],
+    tags=["Users"],
+    dependencies=[Depends(deps.get_current_active_admin)],
+)
+def read_users(
+    db: Session = Depends(deps.get_db),
+    skip: int = 0,
+    limit: int = 100,
+) -> Any:
+    """
+    Retrieve all users (Admins only).
+    """
+    users = crud_user.get_multi(db, skip=skip, limit=limit)
+    return users
 
 @router.post(
     "/",
@@ -112,3 +129,29 @@ def delete_user(
         
     deleted_user = crud_user.remove(db=db, id=user_to_delete.id)
     return deleted_user
+\
+@router.get("/me", response_model=User, tags=["Users"])
+def read_user_me(
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Get current user.
+    """
+    return current_user
+
+@router.put("/{user_email}", response_model=User, tags=["Users"])
+def update_user(
+    user_email: EmailStr,
+    user_in: UserUpdate,
+    db: Session = Depends(deps.get_db),
+    current_admin: User = Depends(deps.get_current_active_admin),
+) -> Any:
+    """
+    Update a user's information (Admins only).
+    """
+    user_to_update = crud_user.get_user_by_email(db, email=user_email)
+    if not user_to_update:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    updated_user = crud_user.update(db=db, db_obj=user_to_update, obj_in=user_in)
+    return updated_user

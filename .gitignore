@@ -3,6 +3,7 @@ projectlog.md
 configtable.md
 script.py
 test_db.py
+users.csv
 
 *.pyc
 __pycache__/
