@@ -159,3 +159,31 @@ export const updateUser = async (userEmail, userData) => {
     throw error;
   }
 };
+
+// --- Instrument Management Service ---
+export const createInstrument = async (instrumentData) => {
+  try {
+    const response = await apiClient.post('/instruments/', instrumentData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const updateInstrument = async (instrumentId, instrumentData) => {
+  try {
+    const response = await apiClient.put(`/instruments/${instrumentId}`, instrumentData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const deleteInstrument = async (instrumentId) => {
+  try {
+    const response = await apiClient.delete(`/instruments/${instrumentId}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
