@@ -1,6 +1,6 @@
 from pydantic import BaseModel, validator
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 # Import the model enum and the schemas for related objects
 from app.models.reservation import ReservationStatus
@@ -52,3 +52,7 @@ class Reservation(ReservationBase):
 
     class Config:
         from_attributes = True
+
+class ReservationList(BaseModel):
+    data: List[Reservation]
+    total: int

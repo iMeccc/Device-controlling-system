@@ -10,7 +10,8 @@ import MyReservationsView from '../views/MyReservationsView.vue'
 import AdminLayout from '../layouts/AdminLayout.vue';
 import UserManagement from '../views/admin/UserManagement.vue';
 import InstrumentManagement from '../views/admin/InstrumentManagement.vue';
-
+import PermissionManagement from '../views/admin/PermissionManagement.vue';
+import ReservationManagement from '../views/admin/ReservationManagement.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -29,6 +30,8 @@ const router = createRouter({
         { path: '', redirect: '/admin/users' },
         { path: 'users', name: 'admin-users', component: UserManagement },
         { path: 'instruments', name: 'admin-instruments', component: InstrumentManagement },
+        { path: 'permissions', name: 'admin-permissions', component: PermissionManagement },
+        { path: 'reservations', name: 'admin-reservations', component: ReservationManagement },
       ]
     }
   ]

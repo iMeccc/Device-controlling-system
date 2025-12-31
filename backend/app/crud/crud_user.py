@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from typing import Optional, List, cast
+from typing import Optional, List, cast, Tuple
 
 from app.core.security import get_password_hash, verify_password
 from app.models.user import User, UserRole
@@ -46,8 +46,20 @@ def remove(db: Session, *, id: int) -> User | None:
         db.commit()
     return user_to_delete
 
-def get_multi(db: Session, *, skip: int = 0, limit: int = 100) -> List[User]:
-    return db.query(User).offset(skip).limit(limit).all()
+def get_multi(
+    db: Session, *, search: Optional[str] = None, skip: int = 0, limit: int = 100
+) -> Tuple[List[User], int]:
+    query = db.query(User)
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            (User.full_name.ilike(search_term)) | (User.email.ilike(search_term))
+        )
+    
+    total = query.count() # Get total count before pagination
+    data = query.order_by(User.id).offset(skip).limit(limit).all()
+    
+    return data, total
 
 from app.schemas.user import UserUpdate # Add this to your imports
 

@@ -10,6 +10,14 @@
           <el-icon><Monitor /></el-icon>
           <span>仪器管理</span>
         </el-menu-item>
+        <el-menu-item index="/admin/permissions">
+          <el-icon><Key /></el-icon>
+          <span>权限管理</span>
+        </el-menu-item>
+        <el-menu-item index="/admin/reservations">
+          <el-icon><Tickets /></el-icon>
+          <span>预约管理</span>
+        </el-menu-item>
         <!-- We will add more links here later -->
       </el-menu>
     </el-aside>
@@ -22,7 +30,7 @@
 
 <script setup>
 // Import icons from element-plus
-import { User, Monitor } from '@element-plus/icons-vue';
+import { User, Monitor, Key, Tickets } from '@element-plus/icons-vue';
 </script>
 
 <style scoped>

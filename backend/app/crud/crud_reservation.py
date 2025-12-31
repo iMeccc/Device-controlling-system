@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from datetime import datetime
 from datetime import date 
 
@@ -15,17 +15,22 @@ def get(db: Session, id: int) -> Optional[Reservation]:
 
 def get_multi_by_user(
     db: Session, *, user_id: int, skip: int = 0, limit: int = 100
-) -> List[Reservation]:
+) -> Tuple[List[Reservation], int]: # Return a tuple
     """
-    Get all reservations for a specific user.
+    Get all reservations for a specific user, with pagination and total count.
     """
-    return (
-        db.query(Reservation)
-        .filter(Reservation.user_id == user_id)
+    query = db.query(Reservation).filter(Reservation.user_id == user_id)
+    
+    total = query.count()
+    
+    data = (
+        query.order_by(Reservation.start_time.desc())
         .offset(skip)
         .limit(limit)
         .all()
     )
+    
+    return data, total
 
 def get_multi_by_instrument(
     db: Session, *, instrument_id: int, skip: int = 0, limit: int = 100
@@ -112,3 +117,31 @@ def remove(db: Session, *, id: int) -> Optional[Reservation]:
         db.delete(db_obj)
         db.commit()
     return db_obj
+
+def get_multi_all(
+    db: Session,
+    *,
+    user_id: Optional[int] = None,
+    instrument_id: Optional[int] = None,
+    skip: int = 0,
+    limit: int = 100,
+) -> Tuple[List[Reservation], int]: # Return a tuple
+    """
+    Get all reservations, with optional filters, and the total count.
+    """
+    query = db.query(Reservation)
+    if user_id is not None:
+        query = query.filter(Reservation.user_id == user_id)
+    if instrument_id is not None:
+        query = query.filter(Reservation.instrument_id == instrument_id)
+    
+    total = query.count() # Get the total count BEFORE pagination
+    
+    data = (
+        query.order_by(Reservation.start_time.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    
+    return data, total

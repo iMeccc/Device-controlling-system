@@ -2,6 +2,7 @@ from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional, List
 
 from app.models.user import UserRole
+from .instrument import Instrument
 
 # -- Base Schemas --
 class UserBase(BaseModel):
@@ -41,10 +42,14 @@ class User(UserBase):
     id: int
     is_active: bool
     # 'role' is already the correct type from UserBase
-    
+    authorized_instruments: List[Instrument] = []
     class Config:
         from_attributes = True
         
 # -- Schema for Bulk Creation --
 class UserBulkCreate(BaseModel):
     users: List[UserCreate]
+
+class UserList(BaseModel):
+    data: List[User]
+    total: int

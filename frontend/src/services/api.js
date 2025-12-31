@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { ElMessage } from 'element-plus';
 
 const apiClient = axios.create({
   baseURL: 'http://127.0.0.1:8000/api/v1',
@@ -23,9 +24,32 @@ apiClient.interceptors.request.use(
   }
 );
 
+apiClient.interceptors.response.use(
+  (response) => {
+    // Any status code that lie within the range of 2xx cause this function to trigger
+    return response;
+  },
+  (error) => {
+    // Any status codes that falls outside the range of 2xx cause this function to trigger
+    if (error.response && error.response.status === 401) {
+      // This is a specific check for "Unauthorized" errors
+      console.error("Authentication Error: ", error.response.data);
+      // Remove the invalid token
+      localStorage.removeItem('access_token');
+      // Show a message to the user
+      ElMessage.error('您的登录已过期，请重新登录。');
+      // Redirect to the login page after a short delay
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 1500);
+    }
+    // Return a rejected promise to be caught by the original caller
+    return Promise.reject(error);
+  }
+);
+
 // --- Authentication Service ---
 export const login = async (email, password) => {
-  // ... (this function remains the same)
   const params = new URLSearchParams();
   params.append('username', email);
   params.append('password', password);
@@ -40,9 +64,9 @@ export const login = async (email, password) => {
 };
 
 // --- User Management Service ---
-export const getUsers = async () => {
+export const getUsers = async (params) => { // <-- Accept a 'params' object
   try {
-    const response = await apiClient.get('/users/');
+    const response = await apiClient.get('/users/', { params }); // <-- Pass params to the request
     return response.data;
   } catch (error) {
     throw error;
@@ -69,7 +93,6 @@ export const deleteUser = async (userEmail) => {
 
 // --- Instrument Service ---
 export const getInstruments = async () => {
-  // ... (this function remains the same)
   try {
     const response = await apiClient.get('/instruments/');
     return response.data;
@@ -79,7 +102,6 @@ export const getInstruments = async () => {
 };
 
 export const getInstrumentById = async (instrumentId) => {
-  // ... (this function remains the same)
   try {
     const response = await apiClient.get(`/instruments/${instrumentId}`);
     return response.data;
@@ -90,7 +112,6 @@ export const getInstrumentById = async (instrumentId) => {
 
 // --- Reservation Service ---
 export const getReservationsByInstrument = async (instrumentId) => {
-  // ... (this function remains the same)
   try {
     const response = await apiClient.get(`/reservations/instrument/${instrumentId}`);
     return response.data;
@@ -99,7 +120,7 @@ export const getReservationsByInstrument = async (instrumentId) => {
   }
 };
 
-// --- NEW: Create Reservation Service ---
+// --- Create Reservation Service ---
 export const createReservation = async (reservationData) => {
   // Thanks to the interceptor, the token will be added automatically!
   try {
@@ -110,10 +131,9 @@ export const createReservation = async (reservationData) => {
   }
 };
 
-export const getMyReservations = async () => {
-  // Thanks to the interceptor, the token is added automatically
+export const getMyReservations = async (params) => { // Accept params
   try {
-    const response = await apiClient.get('/reservations/my-reservations');
+    const response = await apiClient.get('/reservations/my-reservations', { params }); // Pass params
     return response.data;
   } catch (error) {
     throw error;
@@ -182,6 +202,39 @@ export const updateInstrument = async (instrumentId, instrumentData) => {
 export const deleteInstrument = async (instrumentId) => {
   try {
     const response = await apiClient.delete(`/instruments/${instrumentId}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// --- Permission Management Service ---
+export const grantPermission = async (permissionData) => {
+  // The backend expects user_email, not user_id. We need to construct it.
+  // Or, better, we modify the backend to accept user_id.
+  // Let's assume we will modify the backend for simplicity.
+  try {
+    const response = await apiClient.post('/permissions/grant', permissionData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const revokePermission = async (permissionData) => {
+  try {
+    const response = await apiClient.post('/permissions/revoke', permissionData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getAllReservations = async (params) => {
+  try {
+    // Pass the 'params' object to the request config.
+    // Axios will automatically convert it to URL query parameters.
+    const response = await apiClient.get('/reservations/all', { params });
     return response.data;
   } catch (error) {
     throw error;

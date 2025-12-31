@@ -4,12 +4,8 @@ from app.models.instrument import Instrument
 from app.schemas.permission import PermissionGrant # <-- Import the new schema
 from . import crud_user # Import crud_user to find user by email
 
-def grant_permission_by_email(db: Session, *, permission_in: PermissionGrant) -> User | None:
-    """
-    Grant a user permission to an instrument using their email.
-    """
-    # Find the user by their email
-    user = crud_user.get_user_by_email(db, email=permission_in.user_email)
+def grant_permission(db: Session, *, permission_in: PermissionGrant) -> User | None:
+    user = db.query(User).filter(User.id == permission_in.user_id).first()
     instrument = db.query(Instrument).filter(Instrument.id == permission_in.instrument_id).first()
     
     if not user or not instrument:
@@ -22,11 +18,8 @@ def grant_permission_by_email(db: Session, *, permission_in: PermissionGrant) ->
         
     return user
 
-def revoke_permission_by_email(db: Session, *, permission_in: PermissionGrant) -> User | None:
-    """
-    Revoke a user's permission from an instrument using their email.
-    """
-    user = crud_user.get_user_by_email(db, email=permission_in.user_email)
+def revoke_permission(db: Session, *, permission_in: PermissionGrant) -> User | None:
+    user = db.query(User).filter(User.id == permission_in.user_id).first()
     instrument = db.query(Instrument).filter(Instrument.id == permission_in.instrument_id).first()
 
     if not user or not instrument:

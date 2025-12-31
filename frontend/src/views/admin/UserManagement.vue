@@ -1,4 +1,3 @@
-<!-- File: frontend/src/views/admin/UserManagement.vue (The TRULY FINAL and Correct Version) -->
 <template>
   <div>
     <div class="header">
@@ -14,6 +13,21 @@
         </el-upload>
         <el-button type="primary" @click="openCreateDialog">添加新用户</el-button>
       </div>
+    </div>
+    
+    <!-- NEW: Search Input -->
+    <div class="filter-container">
+      <el-input
+        v-model="searchQuery"
+        placeholder="按姓名或邮箱搜索"
+        clearable
+        @clear="handleSearch"
+        @keyup.enter="handleSearch"
+      >
+        <template #append>
+          <el-button @click="handleSearch">搜索</el-button>
+        </template>
+      </el-input>
     </div>
     
     <el-table :data="users" style="width: 100%" v-loading="loading">
@@ -36,6 +50,16 @@
         </template>
       </el-table-column>
     </el-table>
+    <!-- NEW: Pagination Component -->
+    <el-pagination
+      background
+      layout="prev, pager, next, total"
+      :total="totalUsers"
+      :page-size="pageSize"
+      v-model:current-page="currentPage"
+      @current-change="handlePageChange"
+      style="margin-top: 20px; justify-content: flex-end;"
+    />
   </div>
 
   <!-- UNIFIED Dialog for Creating and Editing Users -->
@@ -71,14 +95,19 @@
 import { ref, onMounted, reactive } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import Papa from 'papaparse';
-// --- CRUCIAL: 'updateUser' is now imported ---
 import { getUsers, createUser, deleteUser, bulkCreateUsers, updateUser } from '@/services/api';
 import { authState } from '@/store/auth';
 
 const users = ref([]);
 const loading = ref(true);
 const dialogVisible = ref(false);
-const isEditMode = ref(false); // New state to track dialog mode
+const isEditMode = ref(false);
+
+// --- NEW: State for Search and Pagination ---
+const searchQuery = ref('');
+const currentPage = ref(1);
+const pageSize = ref(10);
+const totalUsers = ref(0); // We need to get this from the backend
 
 // --- CRUCIAL: Unified form for both create and edit ---
 const userForm = reactive({
@@ -96,12 +125,32 @@ onMounted(async () => {
 const fetchData = async () => {
   loading.value = true;
   try {
-    users.value = await getUsers();
+    const params = {
+      search: searchQuery.value || null,
+      skip: (currentPage.value - 1) * pageSize.value,
+      limit: pageSize.value,
+    };
+    // The backend needs to return total count as well. We'll assume it does for now.
+    const response = await getUsers(params);
+    users.value = response.data;
+    totalUsers.value = response.total;
   } catch (error) {
     ElMessage.error('获取用户列表失败。');
   } finally {
     loading.value = false;
   }
+};
+
+// --- NEW: Handlers for search and pagination ---
+const handleSearch = () => {
+  currentPage.value = 1; // Reset to first page on a new search
+  fetchData();
+};
+
+const handlePageChange = (page) => {
+  // The v-model:current-page already updates currentPage.
+  // This handler just needs to trigger the data fetch.
+  fetchData();
 };
 
 const openCreateDialog = () => {
@@ -224,6 +273,9 @@ const handleBeforeUpload = (file) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 20px;
+}
+.filter-container {
   margin-bottom: 20px;
 }
 </style>

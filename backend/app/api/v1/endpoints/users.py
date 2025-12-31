@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from typing import Any, List
+from typing import Any, List, Optional
 from pydantic import EmailStr # <-- Added import
 
 from app.crud import crud_user
-from app.schemas.user import User, UserCreate, UserBulkCreate, UserUpdate
+from app.schemas.user import User, UserCreate, UserBulkCreate, UserUpdate, UserList
 from app.schemas.token import Token
 from app.api import deps
 from app.core.security import create_access_token
@@ -15,21 +15,23 @@ router = APIRouter()
 
 @router.get(
     "/",
-    response_model=List[User],
+    response_model=UserList, 
     tags=["Users"],
     dependencies=[Depends(deps.get_current_active_admin)],
 )
 def read_users(
     db: Session = Depends(deps.get_db),
+    search: Optional[str] = None,
     skip: int = 0,
     limit: int = 100,
+    # current_admin is implicitly used by the dependency, so we can remove it from the signature
+    # for cleaner code, though keeping it is also fine.
 ) -> Any:
     """
-    Retrieve all users (Admins only).
+    Retrieve all users, with optional search filter (Admins only).
     """
-    users = crud_user.get_multi(db, skip=skip, limit=limit)
-    return users
-
+    users, total = crud_user.get_multi(db, search=search, skip=skip, limit=limit)
+    return {"data": users, "total": total}
 @router.post(
     "/",
     response_model=User, 

@@ -26,6 +26,15 @@
           </template>
         </el-table-column>
       </el-table>
+      <!-- NEW: Pagination Component -->
+      <el-pagination
+        background
+        layout="prev, pager, next, total"
+        :total="totalReservations"
+        :page-size="pageSize"
+        @current-change="handlePageChange"
+        style="margin-top: 20px; justify-content: flex-end;"
+      />
     </el-card>
   </div>
 </template>
@@ -38,6 +47,9 @@ import { getMyReservations, cancelReservation } from '@/services/api'; // We'll 
 
 const myReservations = ref([]);
 const loading = ref(true);
+const currentPage = ref(1);
+const pageSize = ref(10); // Show 10 items per page
+const totalReservations = ref(0);
 
 onMounted(async () => {
   await fetchData();
@@ -46,15 +58,25 @@ onMounted(async () => {
 const fetchData = async () => {
   loading.value = true;
   try {
-    const data = await getMyReservations();
-    // Sort reservations by start time, newest first
-    myReservations.value = data.sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
+    const params = {
+      skip: (currentPage.value - 1) * pageSize.value,
+      limit: pageSize.value
+    };
+    // --- CRUCIAL FIX: Destructure the response from the API ---
+    const response = await getMyReservations(params);
+    myReservations.value = response.data;
+    totalReservations.value = response.total;
   } catch (error) {
-    console.error('Failed to fetch my reservations:', error);
     ElMessage.error('获取预约列表失败。');
   } finally {
     loading.value = false;
   }
+};
+
+
+const handlePageChange = (page) => {
+  currentPage.value = page;
+  fetchData();
 };
 
 const goBack = () => {

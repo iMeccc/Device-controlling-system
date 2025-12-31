@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List, Any
+from typing import List, Any, Optional
 
 from app.models.user import User, UserRole
 from app.crud import crud_reservation
-from app.schemas.reservation import Reservation, ReservationCreate, ReservationUpdate
+from app.schemas.reservation import Reservation, ReservationCreate, ReservationUpdate, ReservationList
 from app.api import deps
 from app.models.reservation import ReservationStatus
 from app.crud import crud_reservation, crud_instrument
@@ -82,18 +82,17 @@ def read_reservations_for_instrument(
     return reservations
 
 
-@router.get("/my-reservations", response_model=List[Reservation])
+@router.get("/my-reservations", response_model=ReservationList)
 def read_my_reservations(
     db: Session = Depends(deps.get_db),
+    skip: int = 0, # <-- Add skip and limit
+    limit: int = 10,
     current_user: User = Depends(deps.get_current_user),
 ):
-    """
-    Retrieve all reservations for the current logged-in user.
-    """
-    reservations = crud_reservation.get_multi_by_user(
-        db, user_id=current_user.id
+    reservations, total = crud_reservation.get_multi_by_user( # <-- 2. Unpack
+        db, user_id=current_user.id, skip=skip, limit=limit
     )
-    return reservations
+    return {"data": reservations, "total": total} # <-- 3. Return the dict
 
 
 @router.delete("/{reservation_id}", response_model=Reservation)
@@ -140,3 +139,25 @@ def cancel_reservation(
     )
 
     return cancelled_reservation
+
+@router.get(
+    "/all",
+    response_model=ReservationList,
+    tags=["Reservations"],
+    dependencies=[Depends(deps.get_current_active_admin)],
+)
+def read_all_reservations(
+    db: Session = Depends(deps.get_db),
+    user_id: Optional[int] = None,
+    instrument_id: Optional[int] = None,
+    skip: int = 0,
+    limit: int = 100,
+    current_admin: User = Depends(deps.get_current_active_admin), # Use the dependency, not just in dependencies
+) -> Any:
+    """
+    Retrieve all reservations in the system (Admins only), with optional filters.
+    """
+    reservations, total = crud_reservation.get_multi_all(
+        db, user_id=user_id, instrument_id=instrument_id, skip=skip, limit=limit
+    )
+    return {"data": reservations, "total": total}
